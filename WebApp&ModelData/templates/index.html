@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="hr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hranilica za životinje</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+</head>
+<body>
+    <header>
+        <h1>Hranilica za životinje <img src="{{ url_for('static', filename='paw.png') }}" alt="Paw" class="header-image"></h1>
+    </header>
+
+    <div class="main-content">
+        <div class="info-content">
+            <div class="feeding-controls">
+                <h2>Ručno hranjenje:</h2>
+                <button onclick="feed('SMALL')">Mala porcija (15g)</button>
+                <button onclick="feed('MEDIUM')">Srednja porcija (30g)</button>
+                <button onclick="feed('LARGE')">Velika porcija (50g)</button>
+                <button onclick="refillFeeder()">Napuni hranilicu</button>
+            </div>
+
+            <div class="info-section">
+                <h2 id="remaining-food">Preostala količina hrane: {{ food_quantity }}g</h2>
+            </div>
+
+            <div id="animal-counts" class="info-section">
+                <h2>Prebrojavanje detektiranih i nahranjenih životinja:</h2>
+                <p id="dog-count">Psi: 0</p>
+                <p id="cat-count">Mačke: 0</p>
+                <p id="bird-count">Ptice: 0</p>
+            </div>
+            
+            <div id="last-detected" class="info-section">
+                <h2>Posljednja detektirana životinja:</h2>
+                <p id="animal-info">Niti jedna životinja nije detektirana.</p>
+            </div>
+        </div>
+
+        <div class="video-content">
+            <h2>Prijenos kamere uživo:</h2>
+            <div class="video-wrapper">
+                <img src="{{ url_for('video_feed') }}" width="640" height="480">
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function updateDisplay(data) {
+            $("#remaining-food").text("Preostala hrana: " + data.remaining_food + "g");
+            if (data.animal) {
+                const animalText = {
+                    'dog': 'Pas',
+                    'cat': 'Mačka',
+                    'bird': 'Ptica'
+                }[data.animal.toLowerCase()] || 'Nepoznata životinja';
+    
+                const portionText = {
+                    'SMALL': 'mala porcija',
+                    'MEDIUM': 'srednja porcija',
+                    'LARGE': 'velika porcija'
+                }[data.portion_type.toUpperCase()] || 'nepoznata porcija';
+    
+                $("#animal-info").text(`${animalText}, ${portionText} servirana.`);
+            }
+        }
+    
+        function feed(portion_type) {
+            $.post("/feed", { portion_type }, updateDisplay);
+        }
+    
+        function updateLastDetected() {
+            $.get("/last_detected", updateDisplay);
+        }
+    
+        function updateAnimalCounts() {
+            $.get("/animal_counts", function(data) {
+                $("#dog-count").text("Psi: " + data.dog);
+                $("#cat-count").text("Mačke: " + data.cat);
+                $("#bird-count").text("Ptice: " + data.bird);
+            });
+        }
+    
+        function refillFeeder() {
+            $.post("/refillFeeder", function(data) {
+                $("#remaining-food").text("Preostala hrana: " + data.remaining_food + "g");
+            });
+        }
+    
+        setInterval(updateLastDetected, 2000); 
+        setInterval(updateAnimalCounts, 2000);
+    </script>
+    
+</body>
+</html>
